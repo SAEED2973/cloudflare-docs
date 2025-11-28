@@ -9,7 +9,45 @@ import { TypeScriptExample } from "~/components";
 
 Execute Python, JavaScript, and TypeScript code with support for data visualizations, tables, and rich output formats. Contexts maintain state (variables, imports, functions) across executions.
 
-JavaScript contexts support top-level `await` - no need to wrap async code in IIFE. The last expression is automatically returned as the result.
+## JavaScript top-level await support
+
+JavaScript execution supports top-level `await` without requiring an async IIFE wrapper. The code interpreter automatically transforms your code to enable async operations and returns the value of the last expression.
+
+<TypeScriptExample>
+```
+// No wrapper needed - just write async code directly
+const ctx = await sandbox.createCodeContext({ language: 'javascript' });
+
+const result = await sandbox.runCode(`
+const response = await fetch('https://api.example.com/data');
+const data = await response.json();
+data.value
+`, { context: ctx });
+
+console.log(result.results[0].text); // Returns data.value
+```
+</TypeScriptExample>
+
+**Key features:**
+- **No IIFE wrapper**: Write `await` statements directly at the top level
+- **Auto-return**: The last expression is automatically returned (REPL-style behavior)
+- **State persistence**: Variables and functions persist across executions in the same context
+
+<TypeScriptExample>
+```
+const ctx = await sandbox.createCodeContext({ language: 'javascript' });
+
+// First execution sets up data
+await sandbox.runCode(`
+const result = await Promise.resolve(42);
+const doubled = result * 2;
+`, { context: ctx });
+
+// Second execution accesses previous variables and returns the expression
+const output = await sandbox.runCode(`doubled`, { context: ctx });
+console.log(output.results[0].text); // "84"
+```
+</TypeScriptExample>
 
 ## Methods
 
@@ -113,6 +151,8 @@ console.log(result.results[0]); // Last expression is automatically returned
 :::note[Default context behavior]
 If no `context` is provided, a default context is automatically created/reused for the specified `language`. While convenient for quick tests, **explicitly creating contexts is recommended** for production use to maintain predictable state.
 
+**Python example**:
+
 <TypeScriptExample>
 ```
 const result = await sandbox.runCode(`
@@ -122,6 +162,20 @@ sum(data)
 `, { language: 'python' });
 
 console.log(result.logs.stdout); // ["Sum: 15"]
+console.log(result.results[0].text); // "15"
+```
+</TypeScriptExample>
+
+**JavaScript example with top-level await**:
+
+<TypeScriptExample>
+```
+const result = await sandbox.runCode(`
+const numbers = [1, 2, 3, 4, 5];
+const sum = numbers.reduce((a, b) => a + b, 0);
+await Promise.resolve(sum)
+`, { language: 'javascript' });
+
 console.log(result.results[0].text); // "15"
 ```
 </TypeScriptExample>
