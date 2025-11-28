@@ -74,6 +74,32 @@ console.log('Success:', result.success);
 ```
 </TypeScriptExample>
 
+### Top-level await in JavaScript
+
+JavaScript code execution supports top-level await without requiring manual async function wrapping:
+
+<TypeScriptExample>
+```
+const context = await sandbox.createCodeContext({
+  language: 'javascript'
+});
+
+// Top-level await works directly
+const result = await sandbox.runCode(`
+const response = await fetch('https://api.example.com/data');
+const data = await response.json();
+data
+`, { context: context.id });
+
+console.log('Result:', result.results[0]); // The last expression value
+```
+</TypeScriptExample>
+
+The code interpreter automatically:
+- Wraps code in an async context to enable top-level await
+- Returns the value of the last expression when it is a standalone expression
+- Handles Promise resolution transparently
+
 ### State within a context
 
 Variables and imports remain available between executions in the same context, as long as the container stays active:
@@ -185,7 +211,7 @@ print("Done!")
 
 ## Execute AI-generated code
 
-Run LLM-generated code safely in a sandbox:
+Run LLM-generated code safely in a sandbox. JavaScript code automatically supports top-level await, making it ideal for AI-generated async patterns:
 
 <TypeScriptExample>
 ```
@@ -202,20 +228,20 @@ const response = await fetch('https://api.anthropic.com/v1/messages', {
     max_tokens: 1024,
     messages: [{
       role: 'user',
-      content: 'Write Python code to calculate fibonacci sequence up to 100'
+      content: 'Write JavaScript code to fetch user data from an API'
     }]
   })
 });
 
 const { content } = await response.json();
-const code = content[0].text;
+const code = content[0].text; // e.g., "const data = await fetch(...); data"
 
-// 2. Execute in sandbox
-const context = await sandbox.createCodeContext({ language: 'python' });
+// 2. Execute in sandbox - top-level await works automatically
+const context = await sandbox.createCodeContext({ language: 'javascript' });
 const result = await sandbox.runCode(code, { context: context.id });
 
 console.log('Generated code:', code);
-console.log('Output:', result.output);
+console.log('Result:', result.results[0]);
 console.log('Success:', result.success);
 ```
 </TypeScriptExample>

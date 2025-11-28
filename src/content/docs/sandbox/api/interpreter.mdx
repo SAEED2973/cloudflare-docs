@@ -60,6 +60,24 @@ const result = await sandbox.runCode(code: string, options?: RunCodeOptions): Pr
 - `error` - Execution error if any
 - `executionCount` - Execution counter
 
+**JavaScript top-level await**:
+
+JavaScript code automatically supports top-level await without requiring async function wrappers. The last expression's value is automatically returned:
+
+<TypeScriptExample>
+```
+const ctx = await sandbox.createCodeContext({ language: 'javascript' });
+
+// Top-level await works automatically
+const result = await sandbox.runCode(`
+const users = await fetch('/api/users').then(r => r.json());
+users.length
+`, { context: ctx });
+
+console.log(result.results[0].text); // Number of users
+```
+</TypeScriptExample>
+
 **Recommended usage - create explicit context**:
 
 <TypeScriptExample>
