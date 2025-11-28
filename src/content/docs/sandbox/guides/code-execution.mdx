@@ -51,6 +51,10 @@ const jsContext = await sandbox.createCodeContext({
 ```
 </TypeScriptExample>
 
+:::note[JavaScript top-level await]
+JavaScript contexts automatically support top-level `await` without wrapping code in async IIFE. The last expression value is returned as the result.
+:::
+
 ## Execute code
 
 ### Simple execution
@@ -132,6 +136,36 @@ console.log(result.output); // "Mean: 3.0"
 :::note
 Context state is lost if the container restarts due to inactivity. For critical data, store results outside the sandbox or design your code to reinitialize as needed.
 :::
+
+### Top-level await (JavaScript)
+
+JavaScript contexts support top-level `await` without IIFE wrappers. The last expression is automatically returned:
+
+<TypeScriptExample>
+```
+const jsContext = await sandbox.createCodeContext({
+  language: 'javascript'
+});
+
+// No IIFE needed - await works at top level
+const result = await sandbox.runCode(`
+const data = await Promise.resolve([1, 2, 3, 4, 5]);
+const sum = data.reduce((a, b) => a + b, 0);
+sum
+`, { context: jsContext.id });
+
+console.log(result.results[0].text); // "15"
+
+// Multiple awaits work seamlessly
+const result2 = await sandbox.runCode(`
+const a = await Promise.resolve(10);
+const b = await Promise.resolve(20);
+a + b
+`, { context: jsContext.id });
+
+console.log(result2.results[0].text); // "30"
+```
+</TypeScriptExample>
 
 ## Handle rich outputs
 
