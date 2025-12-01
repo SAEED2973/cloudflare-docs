@@ -134,6 +134,55 @@ export default {
 ```
 </TypeScriptExample>
 
+### `proxyToSandbox()`
+
+Route incoming requests to exposed sandbox ports via preview URLs. This function must be called first in your Worker's fetch handler to enable preview URL routing.
+
+```ts
+function proxyToSandbox<
+  T extends Sandbox<any>,
+  E extends SandboxEnv<T>
+>(request: Request, env: E): Promise<Response | null>
+```
+
+**Parameters**:
+
+- `request` - Incoming request to potentially route
+- `env` - Worker environment binding with Sandbox namespace
+
+**Returns**: `Promise<Response | null>` - Response if the request matches a preview URL pattern, or `null` if not a preview URL request
+
+**Type parameters**:
+- `T extends Sandbox<any>` - The Sandbox class type (useful when extending Sandbox)
+- `E extends SandboxEnv<T>` - Environment type with Sandbox namespace binding
+
+<TypeScriptExample>
+```ts
+import { getSandbox, proxyToSandbox, type SandboxEnv } from "@cloudflare/sandbox";
+
+export { Sandbox } from "@cloudflare/sandbox";
+
+type Env = SandboxEnv;
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    // Route preview URL requests first
+    const proxyResponse = await proxyToSandbox(request, env);
+    if (proxyResponse) return proxyResponse;
+
+    // Your application routes
+    const sandbox = getSandbox(env.Sandbox, 'my-sandbox');
+    // ...
+    return new Response('OK');
+  }
+};
+```
+</TypeScriptExample>
+
+:::note
+When extending the Sandbox class, use the type parameters to maintain type safety. See [Extending the Sandbox class](/sandbox/api/lifecycle/#extending-the-sandbox-class) for examples.
+:::
+
 ## Related resources
 
 - [Preview URLs concept](/sandbox/concepts/preview-urls/) - How preview URLs work

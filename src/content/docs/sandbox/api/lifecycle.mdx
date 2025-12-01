@@ -16,11 +16,11 @@ Create and manage sandbox containers. Get sandbox instances, configure options, 
 Get or create a sandbox instance by ID.
 
 ```ts
-const sandbox = getSandbox(
-  binding: DurableObjectNamespace<Sandbox>,
+function getSandbox<T extends Sandbox<any>>(
+  binding: DurableObjectNamespace<T>,
   sandboxId: string,
   options?: SandboxOptions
-): Sandbox
+): T
 ```
 
 **Parameters**:
@@ -32,7 +32,10 @@ const sandbox = getSandbox(
   - `containerTimeouts` - Configure container startup timeouts
   - `normalizeId` - Lowercase sandbox IDs for preview URL compatibility (default: `false`)
 
-**Returns**: `Sandbox` instance
+**Returns**: Sandbox instance (type `T`, which defaults to `Sandbox`)
+
+**Type parameter**:
+- `T extends Sandbox<any>` - The Sandbox class type. Use this when extending the Sandbox class with custom methods to get proper type inference.
 
 :::note
 The container starts lazily on first operation. Calling `getSandbox()` returns immediately—the container only spins up when you execute a command, write a file, or perform other operations. See [Sandbox lifecycle](/sandbox/concepts/sandboxes/) for details.
@@ -55,6 +58,40 @@ export default {
 :::caution
 When using `keepAlive: true`, you **must** call `destroy()` when finished to prevent containers running indefinitely.
 :::
+
+#### Extending the Sandbox class
+
+You can extend the Sandbox class to add custom methods. The generic type parameter ensures proper type inference:
+
+<TypeScriptExample>
+```
+import { getSandbox, Sandbox, type SandboxEnv } from '@cloudflare/sandbox';
+
+// Define your extended Sandbox class
+export class CustomSandbox extends Sandbox<CustomSandbox> {
+  async runTests(): Promise<{ passed: number; failed: number }> {
+    const result = await this.exec('npm test');
+    // Parse test output
+    return { passed: 10, failed: 0 };
+  }
+}
+
+// Export your custom class as the Durable Object
+export { CustomSandbox as Sandbox };
+
+// Define environment with your custom class
+type Env = SandboxEnv<CustomSandbox>;
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    // getSandbox now returns CustomSandbox type with runTests() available
+    const sandbox = getSandbox(env.Sandbox, 'my-sandbox');
+    const testResults = await sandbox.runTests();
+    return Response.json(testResults);
+  }
+};
+```
+</TypeScriptExample>
 
 ---
 
